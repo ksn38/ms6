@@ -1,0 +1,58 @@
+version: "3.7"
+services:
+  app:
+    build:
+      args:
+        user: ksn38
+        uid: 1000
+      context: .
+      dockerfile: Dockerfile
+    image: ms6
+    container_name: ms6-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./ms6:/var/www
+    networks:
+      - ms6-network
+    ports:
+      - "8000:8000"
+    # command: php artisan serve --host=0.0.0.0
+
+  db:
+    image: postgres:16
+    container_name: ms6-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: djdb
+      POSTGRES_USER: ksn38
+      POSTGRES_PASSWORD: 1
+    volumes:
+      - ./psql:/var/lib/postgresql/data
+      - ./psql_dump:/home/ksn38
+    networks:
+      - ms6-network
+    ports:
+      - "5432:5432"
+    depends_on:
+      - app
+
+  nginx:
+    depends_on:
+      - app
+    image: nginx:alpine
+    container_name: ms6-nginx
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8080:80"
+    volumes:
+      - ./ms6:/var/www
+      - ./nginx/conf.d:/etc/nginx/conf.d/
+      - ./nginx/log:/var/log/nginx/
+    networks:
+      - ms6-network
+
+networks:
+  ms6-network:
+    driver: bridge
